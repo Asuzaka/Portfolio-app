@@ -5,7 +5,6 @@ process.on("unhandledRejection", (error) => {
 
 // Logs for any unhanledRejections
 
-const fs = require("fs");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 dotenv.config({ path: `${__dirname}/.env.local` });
@@ -15,7 +14,7 @@ const mongodbURL = process.env.DATABASE.replace(
   process.env.DATABASE_PASSWORD
 );
 
-mongoose.connect(mongodbURL).then((msg) => {
+mongoose.connect(mongodbURL, { dbName: "Portfolio" }).then((_) => {
   console.log("Succesfully connected to a Database.");
 });
 

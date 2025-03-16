@@ -52,10 +52,11 @@ const UserScheme = new mongoose.Schema({
     },
   },
   userToken: String,
-  userActivated: {
+  isVerified: {
     type: Boolean,
     default: false,
   },
+  createdAt: { type: Date, default: Date.now },
   passwordToken: String,
   passwordTokenExpire: Date,
   passwordChangedAt: Date,
@@ -76,7 +77,16 @@ UserScheme.pre("save", async function (next) {
   next();
 });
 
-// To Remove Deleted users from list
+// To Remove unverified users from db
+UserScheme.index(
+  { createdAt: 1 },
+  {
+    expireAfterSeconds: 86400, // 24 hours
+    partialFilterExpression: { isVerified: false },
+  } // Only applies to unverified users
+);
+
+// To Remove Deleted users from db
 UserScheme.pre(/^find/, async function (next) {
   this.find({ active: { $ne: false } });
   next();

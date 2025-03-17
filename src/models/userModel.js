@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const validator = require("validator");
 const bcrypt = require("bcrypt");
+const crypto = require("crypto");
 
 const UserScheme = new mongoose.Schema({
   username: {
@@ -30,17 +31,16 @@ const UserScheme = new mongoose.Schema({
     validate: [validator.isEmail, "A user must have a valid email"],
   },
   description: String,
-  verified: {
-    type: Boolean,
-    default: false,
-  },
   password: {
     type: String,
     required: [true, "A user must have a password"],
     trim: true,
     select: false,
     minlength: 8,
-    validate: [validator.isAlpha, "A password must contain only characters"],
+    validate: [
+      validator.isAlphanumeric,
+      "A password must contain only characters",
+    ],
   },
   passwordConfirm: {
     type: String,
@@ -69,11 +69,17 @@ const UserScheme = new mongoose.Schema({
 
 // Automatic encoding password as soon as recieved
 UserScheme.pre("save", async function (next) {
-  if (this.password.isModified()) return next();
+  if (!this.isModified("password")) return next();
 
-  const encoded = await bcrypt.hash(this.password, 12);
-  this.password = encoded;
+  this.password = await bcrypt.hash(this.password, 12);
   this.passwordConfirm = undefined;
+  next();
+});
+
+UserScheme.pre("save", async function (next) {
+  if (!this.isModified("password") || this.isNew) return next();
+
+  this.passwordChangedAt = Date.now() - 1000;
   next();
 });
 
@@ -91,6 +97,37 @@ UserScheme.pre(/^find/, async function (next) {
   this.find({ active: { $ne: false } });
   next();
 });
+
+// To create User Token
+UserScheme.methods.createUserToken = function () {
+  const userToken = crypto.randomBytes(26).toString("hex");
+
+  this.userToken = crypto.createHash("sha256").update(userToken).digest("hex");
+
+  return userToken;
+};
+
+UserScheme.methods.confirmPassword = async function (candidate, password) {
+  return await bcrypt.compare(candidate, password);
+};
+
+UserScheme.methods.createResetToken = function () {
+  const resetToken = crypto.randomBytes(32).toString("hex");
+
+  this.passwordToken = crypto
+    .createHash("sha256")
+    .update(resetToken)
+    .digest("hex");
+  this.passwordTokenExpire = Date.now() + 15 * 60 * 1000;
+  return resetToken;
+};
+
+UserScheme.methods.confirmResetToken = function (jwtTimeStamp) {
+  if (this.passwordChangedAt) {
+    this.passwordChangedAt / 1000;
+    console.log(this.passwordChangedAt);
+  }
+};
 
 const User = mongoose.model("User", UserScheme);
 

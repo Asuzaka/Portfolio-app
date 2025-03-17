@@ -5,6 +5,7 @@ module.exports = (err, req, res, next) => {
   err.status = err.status || "error";
   err.statusCode = err.statusCode || 500;
   // Get all from error
+  console.log(err);
   let error = JSON.parse(JSON.stringify(err));
 
   // Take care of Operational errors
@@ -36,22 +37,21 @@ module.exports = (err, req, res, next) => {
 };
 
 function handleJWTexpired() {
-  new customError("Your token is expired, Please log in again", 401);
+  return new customError("Your token is expired, Please log in again", 401);
 }
 function handleJWTError() {
-  new customError("Invalid token. Please try again!", 401);
+  return new customError("Invalid token. Please try again!", 401);
 }
 function handleValidationErrorDB(error) {
-  console.log(error);
   const errors = Object.values(error.errors).map((el) => el.message);
   const message = `Invalid input data. ${errors.join(". ")}`;
-  new customError(message, 400);
+  return new customError(message, 400);
 }
 function handleCastErrorDB(err) {
-  new customError(`Invalid ${err.path}: ${err.value}`, 400);
+  return new customError(`Invalid ${err.path}: ${err.value}`, 400);
 }
 function handleDuplicateErrorDB(err) {
-  new customError(
+  return new customError(
     `Duplicate field value: ${err.keyValue.name}. Please use another value!`,
     400
   );

@@ -30,6 +30,10 @@ const UserScheme = new mongoose.Schema({
     trim: true,
     validate: [validator.isEmail, "A user must have a valid email"],
   },
+  photo: {
+    type: String,
+    default: "default",
+  },
   description: String,
   password: {
     type: String,
@@ -92,12 +96,6 @@ UserScheme.index(
   } // Only applies to unverified users
 );
 
-// To Remove Deleted users from db
-UserScheme.pre(/^find/, async function (next) {
-  this.find({ active: { $ne: false } });
-  next();
-});
-
 // To create User Token
 UserScheme.methods.createUserToken = function () {
   const userToken = crypto.randomBytes(26).toString("hex");
@@ -128,6 +126,13 @@ UserScheme.methods.confirmResetToken = function (jwtTimeStamp) {
     console.log(this.passwordChangedAt);
   }
 };
+
+// Virtual
+UserScheme.virtual("comments", {
+  ref: "Comments",
+  foreignField: "user",
+  localField: "_id",
+});
 
 const User = mongoose.model("User", UserScheme);
 

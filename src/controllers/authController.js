@@ -8,23 +8,25 @@ const validator = require("validator");
 const { promisify } = require("util");
 
 exports.protect = catchAsync(async (req, res, next) => {
-  let token = "";
+  let token;
   // Getting token
   if (
-    !(
-      req.headers.authorization &&
-      req.headers.authorization.startsWith("Bearer")
-    )
+    req.headers.authorization &&
+    req.headers.authorization.startsWith("Bearer")
   ) {
+    token = req.headers.authorization.split(" ")[1];
+  } else if (req.cookie && re.cookie.jwt) {
+    token = req.cookie.jwt;
+  }
+  if (!token) {
     return next(
       new customError("You are not logged in. Please log in to get acces", 401)
     );
   }
-  token = req.headers.authorization.split(" ")[1];
   // Token verification
   const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
   // Check if user still exist
-  const user = User.findById(decoded.id);
+  const user = await User.findById(decoded.id);
   if (!user) {
     return next(
       new customError("The user belonging to this token no longer exists", 401)
@@ -55,12 +57,13 @@ exports.signup = catchAsync(async (req, res, next) => {
   const verfiyUrl = `${req.protocol}://${req.get(
     "host"
   )}/api/v1/users/verify/${userToken}`;
-  const message = `Your email ${user.email} have been registered on site ${req.protocol}. To confirm your email visit ${verfiyUrl}. If you don't, ignore this message`;
   try {
     await sendEmail({
       email: user.email,
       subject: "Your verify link is valid for 24 hours",
-      message,
+      text: "Verify email",
+      name: user.username,
+      url: verfiyUrl,
     });
 
     res.status(200).json({
@@ -180,12 +183,13 @@ exports.forgetPassword = catchAsync(async (req, res, next) => {
   const resetUrl = `${req.protocol}://${req.get(
     "host"
   )}/api/v1/users/resetPassword/${resetToken}`;
-  const message = `You have requested for password reset link ${resetUrl} . If you don't just ignore this message`;
   try {
     await sendEmail({
       email: user.email,
       subject: "Your reset link is valid for 15 minutes",
-      message,
+      text: "Reset Password",
+      name: user.username,
+      url: resetUrl,
     });
 
     res.status(200).json({

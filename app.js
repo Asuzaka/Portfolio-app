@@ -30,6 +30,8 @@ app.use(
 // set Security HTTP HEADERS
 app.use(helmet());
 
+app.set("trust proxy", 1);
+
 // Limit requests From IP
 const limier = rateLimit({
   max: 500,

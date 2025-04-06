@@ -1,7 +1,7 @@
-const logger = require("./src/services/saveLogs");
-process.on("unhandledRejection", (error) => {
-  logger(error, server, __dirname);
-});
+// const logger = require("./src/services/saveLogs");
+// process.on("unhandledRejection", (error) => {
+//   logger(error, server, __dirname);
+// });
 
 // Logs for any unhanledRejections
 

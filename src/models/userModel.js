@@ -32,7 +32,7 @@ const UserScheme = new mongoose.Schema({
   },
   photo: {
     type: String,
-    default: "default",
+    default: "default.png",
   },
   description: String,
   password: {
@@ -123,7 +123,6 @@ UserScheme.methods.createResetToken = function () {
 UserScheme.methods.confirmResetToken = function (jwtTimeStamp) {
   if (this.passwordChangedAt) {
     this.passwordChangedAt / 1000;
-    console.log(this.passwordChangedAt);
   }
 };
 

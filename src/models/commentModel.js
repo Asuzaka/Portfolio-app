@@ -11,10 +11,6 @@ const CommentSchema = new mongoose.Schema({
     required: [true, "A comment can not be empty"],
     trim: true,
   },
-  reply: {
-    type: mongoose.Schema.ObjectId,
-    ref: "Comment",
-  },
   createdAt: {
     type: Date,
     default: Date.now(),

@@ -7,6 +7,18 @@ const sendEmail = require("./../services/nodemailer");
 const validator = require("validator");
 const { promisify } = require("util");
 
+exports.authenticated = (req, res, next) => {
+  if (!req.user) {
+    return next(new customError("Not authenticated", 401));
+  }
+  res.status(200).json({ status: "success", data: req.user });
+};
+
+exports.logout = (req, res, next) => {
+  res.cookie("jwt", "logged out", { expires: new Date(0), httpOnly: true });
+  res.status(200).json({ status: "success" });
+};
+
 exports.protect = catchAsync(async (req, res, next) => {
   let token;
   // Getting token
@@ -15,8 +27,8 @@ exports.protect = catchAsync(async (req, res, next) => {
     req.headers.authorization.startsWith("Bearer")
   ) {
     token = req.headers.authorization.split(" ")[1];
-  } else if (req.cookie && re.cookie.jwt) {
-    token = req.cookie.jwt;
+  } else if (req.cookies && req.cookies.jwt) {
+    token = req.cookies.jwt;
   }
   if (!token) {
     return next(
@@ -54,9 +66,10 @@ exports.signup = catchAsync(async (req, res, next) => {
   const userToken = user.createUserToken();
   await user.save({ validateBeforeSave: false });
   //  Send back an email
-  const verfiyUrl = `${req.protocol}://${req.get(
-    "host"
-  )}/api/v1/users/verify/${userToken}`;
+  // const verfiyUrl = `${req.protocol}://${req.get(
+  //   "host"
+  // )}/api/v1/users/verify/${userToken}`;
+  const verfiyUrl = `${process.env.FRONTEND_URL}/verify/${userToken}`;
   try {
     await sendEmail({
       email: user.email,
@@ -180,9 +193,10 @@ exports.forgetPassword = catchAsync(async (req, res, next) => {
   const resetToken = user.createResetToken();
   await user.save();
   // Send Mail
-  const resetUrl = `${req.protocol}://${req.get(
-    "host"
-  )}/api/v1/users/resetPassword/${resetToken}`;
+  // const resetUrl = `${req.protocol}://${req.get(
+  //   "host"
+  // )}/api/v1/users/resetPassword/${resetToken}`;
+  const resetUrl = `${process.env.FRONTEND_URL}/resetPassword/${resetToken}`;
   try {
     await sendEmail({
       email: user.email,

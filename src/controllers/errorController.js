@@ -5,8 +5,8 @@ module.exports = (err, req, res, next) => {
   err.status = err.status || "error";
   err.statusCode = err.statusCode || 500;
   // Get all from error
-  console.log(err);
-  let error = JSON.parse(JSON.stringify(err));
+  let error = { ...err };
+  error.message = err.message;
 
   // Take care of Operational errors
   if (error.name == "CastError") {
@@ -25,11 +25,9 @@ module.exports = (err, req, res, next) => {
     error = handleJWTexpired();
   }
   // Warn the developer by loggin the unexpected error to the console
-  if (error.isOperational) {
+  if (!error.isOperational) {
     console.log("Unexpected Error:", error);
   }
-  // Check before if error.message exists
-  error.message = err.message || "Something went wrong...";
   // Sending the error response
   res
     .status(error.statusCode)
@@ -51,8 +49,10 @@ function handleCastErrorDB(err) {
   return new customError(`Invalid ${err.path}: ${err.value}`, 400);
 }
 function handleDuplicateErrorDB(err) {
+  const field = Object.keys(err.keyValue)[0];
+  const value = err.keyValue[field];
   return new customError(
-    `Duplicate field value: ${err.keyValue.name}. Please use another value!`,
+    `Duplicate ${field}: ${value}. Please use another value!`,
     400
   );
 }
